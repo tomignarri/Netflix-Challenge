@@ -1,0 +1,208 @@
+package assignment8;
+
+import java.io.*;
+import java.util.*;
+
+// Thomas Ignarri
+// 4.2.2018
+// Assignment 8: Netlfix Challange
+// 
+// This program recommends a movie to user, based on movies that the user has not seen
+// and based on the movie with the highest average rating.
+//
+// Basic explanation for part 2: mark every movie that the console input user has not seen.
+// Among the movies not seen by console input user, reccomend the movie with the highest 
+// average among user data from the file.
+//
+
+public class Assignment8 {
+
+    public static void main(String[] args) throws FileNotFoundException {
+        
+        String moviesFile = "movies.txt";
+        String ratingsFile = "rating.txt";
+        String[] movieListArray = new String[20];
+        int[][] movieRatingsArray = new int[30][20];
+        double[] movieAverages = new double[20];
+        
+        loadData(moviesFile, ratingsFile, movieListArray, movieRatingsArray);
+        
+        int[] consoleScoreInput = consoleInputChoice(movieListArray);
+        
+        calculateScores(movieRatingsArray, consoleScoreInput);
+        
+        movieAverages(movieRatingsArray, movieAverages);
+        
+        int topAvgId = topAverage(consoleScoreInput, movieAverages);
+        
+        displayRecommendation(topAvgId, movieListArray);
+        
+    }
+    
+    public static void loadData( String moviesFileName, 
+                                 String ratingsFileName, 
+                                 String [] movies, 
+                                 int [] [] movieRatings) throws FileNotFoundException {
+        
+        File movieNamesTxt = new File(moviesFileName);
+        File ratingTxt = new File(ratingsFileName);
+        
+        Scanner movieNamesScan = new Scanner(movieNamesTxt);
+        Scanner ratingScan = new Scanner(ratingTxt);
+        
+        int i = 0;
+        while(movieNamesScan.hasNext()){
+            
+            movies[i] = movieNamesScan.nextLine();
+            i++;
+            
+        }
+        //System.out.println(Arrays.toString(movies)); //print movie names
+        
+        int y = 0;
+        int x = 0;
+        while(ratingScan.hasNext() && ratingScan.hasNextLine()){  
+            int line = ratingScan.nextInt();
+            movieRatings[y][x] = line;
+            x++;
+            if (x == 20){
+                y++;
+                x = 0; //Start at beginning of next row
+            }
+        }
+        
+        /*  CHECK THAT RATING FILE IS BEING READ PROPERLY
+        System.out.println();
+        for(int p = 0;p < 30;p++){
+            for(int k = 0;k < 20;k++){
+                System.out.print(movieRatings[p][k] + " ");
+            }
+            System.out.println();
+        }
+        */
+    }
+    
+    //takes rating through console input for each movie
+    //return array of a rating for each movie
+    public static int[] consoleInputChoice(String[] movieList){
+        int[] userInputRatings = new int[20]; 
+        
+        Scanner input = new Scanner(System.in);
+        
+        System.out.println("Choose a number between 1 and 5 for each movie or -1 if never seen: ");
+        for(int i = 0;i < userInputRatings.length;i++){
+            System.out.print(movieList[i] + ": ");
+            userInputRatings[i] = input.nextInt(); 
+
+            //when iterated backwards, changes value of wrongly entered score                                              
+            if(userInputRatings[i] > 5 | userInputRatings[i] < -1){
+                System.out.println("Choose a number between 1 and 5, or -1 if never seen");
+                i--;
+            }    
+        }
+        return userInputRatings;
+    }
+     
+    
+    // calculate and print euclidian distance between 
+    // user averages from file and average from user console input
+    // does not return anything or alter existing arrays
+    //
+    // euclidean distance shows how different the console user's
+    // average overall ratings are from the averages of users in the file data
+    public static void calculateScores(int[][] movieRatings, int[] userInputRating){
+        
+        double[] userScore = new double[movieRatings.length];
+        int user = 0;
+        double userImportSum = 0.0;
+        int moviesNotSeen = 0;
+        double userInputAvg = 0.0;
+        for(int i = 0;i < userInputRating.length;i++){
+            if (userInputRating[i] == -1){
+                moviesNotSeen++;
+            } else {
+                userImportSum += userInputRating[i];
+            }
+        }
+
+        userInputAvg = userImportSum / (20 - moviesNotSeen);
+
+        moviesNotSeen = 0;
+        for(int j = user;j < movieRatings.length;j++){  
+            for(int i = 0;i < movieRatings[0].length;i++){
+                if (movieRatings[j][i] == -1){
+                    moviesNotSeen++;
+                } else {
+                    userScore[j] += movieRatings[j][i];
+                }
+            }
+            userScore[j] /= (20 - moviesNotSeen); 
+            
+            //one dimensional euclidean distance
+            userScore[j] = Math.abs(userScore[j] - userInputAvg); 
+            moviesNotSeen = 0;
+            
+        }
+        
+        //print euclidean distances
+        for(int i = 0;i < userScore.length;i++){
+            //System.out.printf("%.2f" + " ", userScore[i]);
+        }
+
+    }
+    
+    
+    public static void movieAverages(int[][] movieRatings, double[] movieAvgs){
+        
+        int moviesNotSeen = 0;
+        
+        for (int i = 0;i < movieRatings[0].length;i++){
+            for(int j = 0;j < movieRatings.length;j++){
+                if (movieRatings[j][i] == -1) {
+                    moviesNotSeen++;
+                } else {
+                    movieAvgs[i] += movieRatings[j][i];
+                }
+            }
+        movieAvgs[i] /= (30 - moviesNotSeen);
+        moviesNotSeen = 0;
+        //System.out.println();
+        //System.out.printf("%.2f" + "  Average", movieAvgs[i]); //Print movie averages
+        }
+          
+    }
+    
+    //find the highest rated movie based on file data
+    //takes user console input ratings and averages for movies from file
+    //returns id of movie with highest average rating from file data
+    public static int topAverage(int[] userInput1, double[] movieAverages1){
+        
+        int movieId = 0;
+        double largestAvg = 0;
+        for(int i = 0;i < userInput1.length;i++){
+            if(userInput1[i] == -1){
+                if(movieAverages1[i] > largestAvg){
+                    largestAvg = movieAverages1[i];
+                    movieId = i;
+                }  
+            }
+        }
+        
+        //if the user has seen every movie...largestAvg will never change
+        if(largestAvg == 0){
+            return -1;
+        }
+        
+        return movieId;
+    }
+    
+    //passed the index of highest rated movie and list of movie names
+    //prints if the user has seen every movie on list or the top recommended movie
+    public static void displayRecommendation(int topAvgIndex, String[] movieList){
+        if(topAvgIndex == -1){
+            System.out.println("You have seen every movie on the list!");
+        } else {
+            System.out.println("Recommended movie is: " + movieList[topAvgIndex]); 
+        }
+    }
+}
